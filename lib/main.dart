@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/gestures.dart';
+import 'package:flutter/services.dart';
 import 'screens/onboarding/OnboardingScreen.dart';
-import 'package:device_preview/device_preview.dart';
+//import 'package:device_preview/device_preview.dart';
 import 'screens/collaboration/delete_Group.dart';
 import 'screens/connectBank/connect_bank_screen.dart';
 
@@ -14,13 +15,18 @@ class _MouseScrollBehavior extends MaterialScrollBehavior {
       };
 }
 void main() {
-  WidgetsFlutterBinding.ensureInitialized(); // 👈 this is required
+  WidgetsFlutterBinding.ensureInitialized();
+  // Hide bottom nav bar (back/home/recents), keep status bar
+  SystemChrome.setEnabledSystemUIMode(
+    SystemUiMode.manual,
+    overlays: [SystemUiOverlay.top],
+  );
   runApp(
-        DevicePreview(
-      enabled: true,
-      builder: (context) => const MyApp(),
-      )
-      // const MyApp()
+      //   DevicePreview(
+      // enabled: true,
+      // builder: (context) => const MyApp(),
+      // )
+      const MyApp()
   );
 }
 
@@ -33,8 +39,8 @@ class MyApp extends StatelessWidget {
       title: 'FlowBank',
       theme: ThemeData(fontFamily: 'Manrope', useMaterial3: true),
       scrollBehavior: _MouseScrollBehavior(),
-            locale: DevicePreview.locale(context),
-      builder: DevicePreview.appBuilder,
+            //locale: DevicePreview.locale(context),
+      //builder: DevicePreview.appBuilder,
 
       home: const OnboardingScreen(),
 

@@ -3,6 +3,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
+import '../../config/api_config.dart';
 import 'goal_setup_screen.dart';
 import 'spending_forecast_screen.dart';
 
@@ -31,29 +32,10 @@ class _FinancialHealthScreenState extends State<FinancialHealthScreen> {
   Map<String, dynamic>? _summary;
   List<dynamic> _cuts = [];
 
-  final String baseUrl = "http://127.0.0.1:8000";
-  String? userId;
-
   @override
   void initState() {
     super.initState();
-    _loadUserAndFetch();
-  }
-
-  Future<void> _loadUserAndFetch() async {
-    final prefs = await SharedPreferences.getInstance();
-    final id = prefs.getString("userId") ?? prefs.getString("_id");
-
-    if (id == null) {
-      setState(() {
-        _error = "User not logged in";
-        _loading = false;
-      });
-      return;
-    }
-
-    setState(() => userId = id);
-    await _fetch();
+    _fetch();
   }
 
   Future<void> _fetch() async {
@@ -63,17 +45,46 @@ class _FinancialHealthScreenState extends State<FinancialHealthScreen> {
     });
 
     try {
-      final uri = Uri.parse("$baseUrl/financial-health?user_id=$userId");
-      final res = await http.get(uri);
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('accessToken') ?? '';
+
+      final uri = Uri.parse('${ApiConfig.nodeServerUrl}/api/ai/financial-health');
+      final res = await http.get(uri, headers: {
+        'Authorization': 'Bearer $token',
+        'Content-Type': 'application/json',
+      });
 
       if (res.statusCode != 200) {
-        throw Exception("Server error ${res.statusCode}: ${res.body}");
+        throw Exception('Server error ${res.statusCode}: ${res.body}');
       }
 
       final data = jsonDecode(res.body) as Map<String, dynamic>;
+
+      final goalEstimates = (data['goalEstimates'] as List<dynamic>? ?? []);
+      final firstGoal = goalEstimates.isNotEmpty ? goalEstimates[0] as Map : null;
+      final savingsRate = (data['savingsRate'] as num?)?.toDouble() ?? 0;
+      final runwayMonths = (data['runwayMonths'] as num?)?.toDouble() ?? 0;
+
       setState(() {
-        _summary = data["summary"] as Map<String, dynamic>?;
-        _cuts = (data["cut_suggestions"] as List<dynamic>? ?? []);
+        _summary = {
+          'predicted_spend_next_30_days': data['avgMonthlySpend'],
+          'estimated_monthly_net': data['monthlySavings'],
+          'saving_goal_feasible': savingsRate > 0 && firstGoal?['monthsToAchieve'] != null,
+          'goal_estimated_months_to_reach': firstGoal?['monthsToAchieve']?.toString(),
+          'shortage_warning': runwayMonths < 2 && runwayMonths > 0
+              ? 'Warning: At your current spending rate, your balance may run out in ${runwayMonths.toStringAsFixed(1)} months.'
+              : null,
+          'goal_title': firstGoal?['name'],
+          'goal_target_amount': firstGoal != null ? ((firstGoal['remaining'] as num?)?.toDouble() ?? 0) : null,
+          'inputs': {'currency': 'USD', 'currency_symbol': '\$'},
+        };
+        _cuts = (data['costCuttingSuggestions'] as List<dynamic>? ?? []).map((c) {
+          return {
+            'category': c['merchant'],
+            'suggested_cut_percent': '20',
+            'estimated_saving_next_30_days': (c['avgPerVisit'] as num?)?.toDouble() ?? 0,
+          };
+        }).toList();
         _loading = false;
       });
     } catch (e) {

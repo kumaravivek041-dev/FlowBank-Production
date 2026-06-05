@@ -5,6 +5,6 @@ class ApiConfig {
   //   https://flowbank-python-ai.up.railway.app
   // Paste those URLs below, then rebuild the APK.
 
-  static const String nodeServerUrl  = 'https://YOUR-NODE-SERVICE.up.railway.app';
-  static const String pythonAiUrl    = 'https://YOUR-PYTHON-AI-SERVICE.up.railway.app';
+  static const String nodeServerUrl  = 'https://flowbank-production-production.up.railway.app';
+  static const String pythonAiUrl    = 'https://flowbank-production-production-ec24.up.railway.app';
 }
