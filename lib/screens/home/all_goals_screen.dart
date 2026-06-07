@@ -182,20 +182,31 @@ class _AllGoalsScreenState extends State<AllGoalsScreen> {
           ),
         ),
       ),
-      body: _loading
-          ? const Center(child: CircularProgressIndicator(color: Color(0xFF217BFF)))
-          : _goals.isEmpty
-              ? _emptyState()
-              : ListView.builder(
-                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 100),
-                  itemCount: _goals.length,
-                  itemBuilder: (context, i) => _GoalTile(
-                    goal: _goals[i],
-                    accentColor: _accentColor(_goals[i]['themeColor'] as String?),
-                    icon: _categoryIcon(_goals[i]['category'] as String?),
-                    onTap: () => _showAddSpendSheet(_goals[i]),
+      body: RefreshIndicator(
+        onRefresh: _fetchGoals,
+        color: const Color(0xFF217BFF),
+        child: _loading
+            ? const Center(child: CircularProgressIndicator(color: Color(0xFF217BFF)))
+            : _goals.isEmpty
+                ? ListView(
+                    children: [
+                      SizedBox(
+                        height: MediaQuery.of(context).size.height * 0.6,
+                        child: _emptyState(),
+                      ),
+                    ],
+                  )
+                : ListView.builder(
+                    padding: const EdgeInsets.fromLTRB(16, 12, 16, 100),
+                    itemCount: _goals.length,
+                    itemBuilder: (context, i) => _GoalTile(
+                      goal: _goals[i],
+                      accentColor: _accentColor(_goals[i]['themeColor'] as String?),
+                      icon: _categoryIcon(_goals[i]['category'] as String?),
+                      onTap: () => _showAddSpendSheet(_goals[i]),
+                    ),
                   ),
-                ),
+      ),
     );
   }
 

@@ -8,7 +8,7 @@ const BudgetGoal = require('../models/BudgetGoal.js');
 
 router.post('/goal-set', protect, ModerateLimiter,async (req, res) => {
   try {
-    const goal = await BudgetGoal.create(req.body);
+    const goal = await BudgetGoal.create({ ...req.body, userId: req.user._id.toString() });
     res.status(201).json(goal);
   } catch (e) {
     res.status(400).json({ message: e.message });

@@ -158,7 +158,7 @@ class _BudgetGoalScreenState extends State<BudgetGoalScreen>
           'userId':    userId,
           'goalName':  _goalNameController.text.trim(),
           'amount':    double.parse(_amountController.text.trim()),
-          'duration':  _selectedDuration,
+          'resetDuration': _selectedDuration,
           'category':  _selectedCategory,
           'goalType':  _selectedGoalType,
         },

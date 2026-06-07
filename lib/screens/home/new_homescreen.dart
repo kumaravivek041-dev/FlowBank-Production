@@ -955,10 +955,17 @@ String _fmtCategory(dynamic cat) {
                       SectionHeader(
             title: 'Recent Transactions',
             showButton: allTransactions.isNotEmpty || _manualHomeTransactions.isNotEmpty,
-            destination: AllTransactionsScreen(
-              rawTransactions: allTransactions,
-              userName: userName ?? 'User',
-            ),
+            onViewAll: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => AllTransactionsScreen(
+                    rawTransactions: allTransactions,
+                    userName: userName ?? 'User',
+                  ),
+                ),
+              ).then((_) => _fetchGoals());
+            },
           ),
           const SizedBox(height: 16),
           (allTransactions.isEmpty && _manualHomeTransactions.isEmpty)

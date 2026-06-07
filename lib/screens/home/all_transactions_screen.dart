@@ -599,11 +599,14 @@ class _TxTile extends StatelessWidget {
         Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Text(tx.name, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: _accent)),
           const SizedBox(height: 3),
-          if (tx.isDebit || tx.category != 'Uncategorized')
+          if (tx.isDebit && categorizedIn != null && categorizedIn!.isNotEmpty)
             Text(
-              tx.isDebit && categorizedIn != null && tx.category == 'Uncategorized'
-                  ? 'Categorized in $categorizedIn'
-                  : tx.category,
+              'Categorized in $categorizedIn',
+              style: TextStyle(fontSize: 12, color: _accent.withOpacity(0.7), fontWeight: FontWeight.w500),
+            )
+          else if (tx.category != 'Uncategorized')
+            Text(
+              tx.category,
               style: TextStyle(fontSize: 12, color: _accent.withOpacity(0.7), fontWeight: FontWeight.w500),
             ),
         ])),
