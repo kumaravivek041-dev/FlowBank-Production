@@ -38,6 +38,7 @@ class _HomeScreenState extends State<HomeScreen> {
   List<Map<String, dynamic>> recentTransactions = [];
   bool isLoadingData = true;
   List<Map<String, dynamic>> allTransactions = [];
+  List<Map<String, dynamic>> _manualHomeTransactions = [];
   List<Map<String, dynamic>> _goals = [];
   bool _goalsLoading = true;
   Map<String, String> _categorizedMap = {};
@@ -380,6 +381,7 @@ final List<Map<String, dynamic>> parsedTransactions = allTxRaw.take(5).toList();
         print('✅ Accounts: ${plaidAccounts.length}');
         print('✅ Transactions: ${recentTransactions.length}');
       });
+      _fetchManualTransactions();
     } else {
       print('Failed to fetch data: ${response.body}');
       setState(() => isLoadingData = false);
@@ -388,6 +390,38 @@ final List<Map<String, dynamic>> parsedTransactions = allTxRaw.take(5).toList();
     print('Error fetching data: $e');
     setState(() => isLoadingData = false);
   }
+}
+
+Future<void> _fetchManualTransactions() async {
+  try {
+    final res = await ApiService.get('/api/manual-transactions', context);
+    if (res.statusCode == 200 && mounted) {
+      final List data = jsonDecode(res.body);
+      final normalized = data.map<Map<String, dynamic>>((m) {
+        final rawDate = m['date']?.toString() ?? '';
+        final dateStr = rawDate.contains('T') ? rawDate.split('T').first : rawDate;
+        final isDebit = (m['isDebit'] as bool?) ?? true;
+        final amount = (m['amount'] as num?)?.toDouble() ?? 0.0;
+        return {
+          'transaction_id': 'manual_${m['_id']}',
+          'name': m['name']?.toString() ?? 'Transaction',
+          'amount': isDebit ? amount : -amount,
+          'date': dateStr,
+          'category': m['category']?.toString() ?? 'Other',
+          'account_name': (m['source'] == 'ocr') ? 'Receipt' : 'Manual',
+        };
+      }).toList();
+
+      if (mounted) {
+        setState(() {
+          _manualHomeTransactions = normalized;
+          final combined = [...allTransactions, ...normalized];
+          combined.sort((a, b) => (b['date']?.toString() ?? '').compareTo(a['date']?.toString() ?? ''));
+          recentTransactions = combined.take(5).toList();
+        });
+      }
+    }
+  } catch (_) {}
 }
 
 Future<void> _handleRefresh() async {
@@ -920,14 +954,14 @@ String _fmtCategory(dynamic cat) {
           
                       SectionHeader(
             title: 'Recent Transactions',
-            showButton: allTransactions.isNotEmpty,
+            showButton: allTransactions.isNotEmpty || _manualHomeTransactions.isNotEmpty,
             destination: AllTransactionsScreen(
               rawTransactions: allTransactions,
               userName: userName ?? 'User',
             ),
           ),
           const SizedBox(height: 16),
-          allTransactions.isEmpty
+          (allTransactions.isEmpty && _manualHomeTransactions.isEmpty)
               ? Container(
           width: double.infinity,
           padding: const EdgeInsets.symmetric(vertical: 28),

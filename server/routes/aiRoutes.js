@@ -6,6 +6,7 @@ const BankAccount = require('../models/user_BankAccount.js');
 const BudgetGoal = require('../models/BudgetGoal.js');
 const Investment = require('../models/Investment.js');
 const User = require('../models/User.js');
+const ManualTransaction = require('../models/ManualTransaction.js');
 const { PlaidApi, Configuration, PlaidEnvironments } = require('plaid');
 const Groq = require('groq-sdk');
 
@@ -26,11 +27,12 @@ const plaidClient = new PlaidApi(new Configuration({
 
 async function getUserFinancialContext(userId, userEmail) {
   try {
-    const [user, bankAccounts, goals, investments] = await Promise.all([
+    const [user, bankAccounts, goals, investments, manualTxs] = await Promise.all([
       User.findById(userId).select('monthlyIncome incomeConfirmed'),
       BankAccount.find({ user: userId }),
       BudgetGoal.find({ userId: userId }),
       Investment.find({ userId: userId.toString(), status: 'active' }),
+      ManualTransaction.find({ userId: userId.toString() }).sort({ date: -1 }).limit(200),
     ]);
 
     // Fetch transactions from Plaid for each bank account
@@ -55,6 +57,16 @@ async function getUserFinancialContext(userId, userEmail) {
         totalBalance += balRes.data.accounts.reduce((s, a) => s + (a.balances.current || 0), 0);
       } catch (_) {}
     }));
+
+    // Merge manual transactions (normalize to Plaid convention: positive=expense)
+    const normalizedManual = manualTxs.map(t => ({
+      date: t.date instanceof Date ? t.date.toISOString().split('T')[0] : String(t.date).split('T')[0],
+      amount: t.isDebit ? t.amount : -t.amount,
+      category: t.category || 'Other',
+      name: t.name,
+      merchant_name: t.name,
+    }));
+    allTransactions = allTransactions.concat(normalizedManual);
 
     // Current month stats
     const now = new Date();

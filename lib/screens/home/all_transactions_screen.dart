@@ -611,32 +611,15 @@ class _TxTile extends StatelessWidget {
           Text('${tx.isDebit ? '-' : '+'}\$${tx.amount.toStringAsFixed(2)}', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: _accent)),
           const SizedBox(height: 4),
           if (tx.isDebit)
-            tx.source != 'plaid'
-                ? Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
-                    decoration: BoxDecoration(
-                      color: tx.source == 'ocr' ? const Color(0xFFF0FDF4) : const Color(0xFFFFF7ED),
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: tx.source == 'ocr' ? const Color(0xFFBBF7D0) : const Color(0xFFFED7AA)),
+            categorizedIn != null
+                ? Text('Categorized', style: TextStyle(fontSize: 12, fontFamily: 'Manrope', fontWeight: FontWeight.w500, color: _accent))
+                : GestureDetector(
+                    onTap: onCategorize,
+                    child: const Text(
+                      'Categorize +',
+                      style: TextStyle(fontSize: 12, fontFamily: 'Manrope', fontWeight: FontWeight.w600, color: Color(0xFF667085)),
                     ),
-                    child: Text(
-                      tx.source == 'ocr' ? 'Receipt' : 'Manual',
-                      style: TextStyle(
-                        fontSize: 10,
-                        fontWeight: FontWeight.w600,
-                        color: tx.source == 'ocr' ? const Color(0xFF15803D) : const Color(0xFFEA580C),
-                      ),
-                    ),
-                  )
-                : categorizedIn != null
-                    ? Text('Categorized', style: TextStyle(fontSize: 12, fontFamily: 'Manrope', fontWeight: FontWeight.w500, color: _accent))
-                    : GestureDetector(
-                        onTap: onCategorize,
-                        child: const Text(
-                          'Categorize +',
-                          style: TextStyle(fontSize: 12, fontFamily: 'Manrope', fontWeight: FontWeight.w600, color: Color(0xFF667085)),
-                        ),
-                      ),
+                  ),
           const SizedBox(height: 4),
           Text(shortDate, style: const TextStyle(fontSize: 11, color: Color(0xFF98A2B3))),
         ]),
@@ -1313,42 +1296,23 @@ class _AddTransactionSheetState extends State<_AddTransactionSheet> {
 
       const SizedBox(height: 12),
 
-      Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          _fieldLabel('Date'),
-          const SizedBox(height: 6),
-          GestureDetector(
-            onTap: _pickDate,
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
-              decoration: BoxDecoration(color: _bgGrey, borderRadius: BorderRadius.circular(10), border: Border.all(color: _border)),
-              child: Row(children: [
-                const Icon(Icons.calendar_today_rounded, size: 15, color: _textLight),
-                const SizedBox(width: 8),
-                Text(DateFormat('MMM d, yyyy').format(_date),
-                  style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: _textDark)),
-              ]),
-            ),
-          ),
-        ])),
-        const SizedBox(width: 10),
-        Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          _fieldLabel('Category'),
-          const SizedBox(height: 6),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
+      Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        _fieldLabel('Date'),
+        const SizedBox(height: 6),
+        GestureDetector(
+          onTap: _pickDate,
+          child: Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
             decoration: BoxDecoration(color: _bgGrey, borderRadius: BorderRadius.circular(10), border: Border.all(color: _border)),
-            child: DropdownButton<String>(
-              value: _category,
-              isExpanded: true,
-              underline: const SizedBox(),
-              icon: const Icon(Icons.keyboard_arrow_down_rounded, size: 18, color: _textLight),
-              style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: _textDark),
-              onChanged: (v) { if (v != null) setState(() => _category = v); },
-              items: _categories.map((c) => DropdownMenuItem(value: c, child: Text(c))).toList(),
-            ),
+            child: Row(children: [
+              const Icon(Icons.calendar_today_rounded, size: 15, color: _textLight),
+              const SizedBox(width: 8),
+              Text(DateFormat('MMM d, yyyy').format(_date),
+                style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: _textDark)),
+            ]),
           ),
-        ])),
+        ),
       ]),
 
       const SizedBox(height: 20),
