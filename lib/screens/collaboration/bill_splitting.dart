@@ -10,6 +10,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../collaboration/inPage_add_members_page.dart';
 import 'package:flowbank/api/api_service.dart';
 import '../notification/exit_request_page.dart';
+import '../notification/notification-page.dart';
 
 /// --------------------
 /// Member Model
@@ -57,7 +58,8 @@ class BillSplitting extends StatefulWidget {
 
 class _BillSplittingState extends State<BillSplitting> {
   bool _pageLoading = true;
-  int _selectedIndex = 0;
+  int _selectedIndex = 1;
+  String _userInitials = 'U';
   bool _isExpanded = false;
   String? ownerEmail;
   double? totalAmount;
@@ -160,7 +162,8 @@ if (!mounted) return;
     final prefs = await SharedPreferences.getInstance();
     setState(() {
       userEmail = prefs.getString('userEmail') ?? 'user';
-    }); 
+      _userInitials = prefs.getString('userInitials') ?? 'U';
+    });
   }
 
   /// Fetch total amount
@@ -568,10 +571,10 @@ floatingActionButtonLocation: FloatingActionButtonLocation.endDocked,
                   children: [
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: const [
+                      children: [
                         Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
+                          children: const [
                             Text(
                               "Bill Splitting",
                               style: TextStyle(
@@ -592,10 +595,22 @@ floatingActionButtonLocation: FloatingActionButtonLocation.endDocked,
                             ),
                           ],
                         ),
-                        CircleAvatar(
-                          radius: 28,
-                          backgroundImage: NetworkImage(
-                            "https://i.pravatar.cc/150?img=3",
+                        Container(
+                          width: 56,
+                          height: 56,
+                          decoration: const BoxDecoration(
+                            color: Color(0xFFF5FAFF),
+                            shape: BoxShape.circle,
+                          ),
+                          child: Center(
+                            child: Text(
+                              _userInitials,
+                              style: const TextStyle(
+                                color: Color(0xFF0179FE),
+                                fontSize: 22,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
                           ),
                         ),
                       ],
@@ -757,9 +772,11 @@ floatingActionButtonLocation: FloatingActionButtonLocation.endDocked,
                 selectedItemColor: activeColor,
                 unselectedItemColor: inactiveColor,
                 onTap: (index) {
-                  setState(() {
-                    _selectedIndex = index;
-                  });
+                  if (index == 0) {
+                    Navigator.popUntil(context, (r) => r.isFirst);
+                  } else if (index == 2) {
+                    Navigator.push(context, MaterialPageRoute(builder: (_) => const NotificationPage()));
+                  }
                 },
                 items: const [
                   BottomNavigationBarItem(

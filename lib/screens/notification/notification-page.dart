@@ -18,6 +18,7 @@ class NotificationPage extends StatefulWidget {
 
 class _NotificationPageState extends State<NotificationPage> {
   String? userEmail;
+  String _userInitials = 'U';
 
   List notifications = [];
   bool _pageLoading = false;
@@ -38,6 +39,7 @@ class _NotificationPageState extends State<NotificationPage> {
 
     setState(() {
       userEmail = prefs.getString('userEmail');
+      _userInitials = prefs.getString('userInitials') ?? 'U';
       _pageLoading = true;
     });
     
@@ -150,10 +152,22 @@ class _NotificationPageState extends State<NotificationPage> {
                             ),
                           );
                         },
-                        child: const CircleAvatar(
-                          radius: 28,
-                          backgroundImage: NetworkImage(
-                            "https://i.pravatar.cc/150?img=3",
+                        child: Container(
+                          width: 56,
+                          height: 56,
+                          decoration: const BoxDecoration(
+                            color: Color(0xFFF5FAFF),
+                            shape: BoxShape.circle,
+                          ),
+                          child: Center(
+                            child: Text(
+                              _userInitials,
+                              style: const TextStyle(
+                                color: Color(0xFF0179FE),
+                                fontSize: 22,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
                           ),
                         ),
                       ),

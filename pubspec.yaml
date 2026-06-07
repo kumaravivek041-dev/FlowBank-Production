@@ -45,6 +45,7 @@ dev_dependencies:
     sdk: flutter
 
   flutter_lints: ^5.0.0
+  flutter_launcher_icons: ^0.14.3
 
 
 flutter:
@@ -71,6 +72,7 @@ flutter:
     - assets/background-gradient.png
     - assets/money-loading.json
     - assets/ai-loading.json
+    - assets/FlowBank-icon.png
 
 
   fonts:
@@ -90,3 +92,8 @@ flutter:
           weight: 300
         - asset: assets/fonts/Manrope-ExtraLight.ttf
           weight: 200
+
+flutter_launcher_icons:
+  android: true
+  ios: false
+  image_path: "assets/FlowBank-icon.png"

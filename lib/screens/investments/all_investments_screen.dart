@@ -7,6 +7,8 @@ import 'create_investment_screen.dart';
 import 'closed_investments_screen.dart';
 import 'investment_detail_sheet.dart';
 import 'net_worth_screen.dart';
+import '../collaboration/collaboration_screen.dart';
+import '../notification/notification-page.dart';
 
 class AllInvestmentsScreen extends StatefulWidget {
   const AllInvestmentsScreen({super.key});
@@ -27,6 +29,7 @@ class _AllInvestmentsScreenState extends State<AllInvestmentsScreen> {
   bool _loading = true;
   String _userName = 'User';
   String _userInitials = 'U';
+  static const int _selectedIndex = 0;
   Map<String, dynamic>? _benchmark;
   bool _benchmarkLoading = false;
 
@@ -88,6 +91,47 @@ class _AllInvestmentsScreenState extends State<AllInvestmentsScreen> {
         icon: const Icon(Icons.add_rounded, color: Colors.white),
         label: const Text('Add Investment', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontFamily: 'Manrope')),
       ),
+      bottomNavigationBar: ClipRRect(
+        borderRadius: const BorderRadius.only(
+          topLeft: Radius.circular(24),
+          topRight: Radius.circular(24),
+        ),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+          child: Container(
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.6),
+              border: Border.all(color: Colors.white.withOpacity(0.2)),
+            ),
+            child: SafeArea(
+              top: false,
+              child: BottomNavigationBar(
+                backgroundColor: Colors.transparent,
+                type: BottomNavigationBarType.fixed,
+                elevation: 0,
+                selectedItemColor: _blue,
+                unselectedItemColor: const Color(0xFF667085),
+                currentIndex: _selectedIndex,
+                showUnselectedLabels: true,
+                onTap: (index) {
+                  if (index == 0) {
+                    Navigator.pop(context);
+                  } else if (index == 1) {
+                    Navigator.push(context, MaterialPageRoute(builder: (_) => const CollaborationScreen()));
+                  } else if (index == 2) {
+                    Navigator.push(context, MaterialPageRoute(builder: (_) => const NotificationPage()));
+                  }
+                },
+                items: const [
+                  BottomNavigationBarItem(icon: Icon(Icons.home_rounded), label: 'Home'),
+                  BottomNavigationBarItem(icon: Icon(Icons.groups_rounded), label: 'Groups'),
+                  BottomNavigationBarItem(icon: Icon(Icons.notification_add), label: 'Notifications'),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
       body: _loading
           ? const Center(child: CircularProgressIndicator(strokeWidth: 2, color: _blue))
           : RefreshIndicator(
@@ -145,29 +189,14 @@ class _AllInvestmentsScreenState extends State<AllInvestmentsScreen> {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       crossAxisAlignment: CrossAxisAlignment.end,
                       children: [
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Text(
-                              'Investments',
-                              style: TextStyle(
-                                fontSize: 28,
-                                fontFamily: 'Manrope',
-                                fontWeight: FontWeight.w700,
-                                height: -0.5,
-                              ),
-                            ),
-                            const SizedBox(height: 6),
-                            Text(
-                              _userName,
-                              style: const TextStyle(
-                                color: Color(0xFF0179FE),
-                                fontSize: 28,
-                                fontFamily: 'Manrope',
-                                fontWeight: FontWeight.w700,
-                              ),
-                            ),
-                          ],
+                        const Text(
+                          'Investments',
+                          style: TextStyle(
+                            color: Color(0xFF0179FE),
+                            fontSize: 28,
+                            fontFamily: 'Manrope',
+                            fontWeight: FontWeight.w700,
+                          ),
                         ),
                         Padding(
                           padding: const EdgeInsets.only(bottom: 8),

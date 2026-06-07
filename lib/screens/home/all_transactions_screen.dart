@@ -21,6 +21,8 @@ class PlaidTransaction {
   final String category;
   final String accountName;
   final bool isDebit;
+  final String source; // 'plaid', 'manual', 'ocr'
+  final String? manualId;
 
   PlaidTransaction({
     required this.transactionId,
@@ -30,6 +32,8 @@ class PlaidTransaction {
     required this.category,
     required this.accountName,
     required this.isDebit,
+    this.source = 'plaid',
+    this.manualId,
   });
 
   factory PlaidTransaction.fromMap(Map<String, dynamic> map) {
@@ -42,6 +46,23 @@ class PlaidTransaction {
       category: _parseCategory(map['category']),
       accountName: map['account_name'] ?? map['accountName'] ?? 'My Account',
       isDebit: rawAmount > 0,
+      source: 'plaid',
+    );
+  }
+
+  factory PlaidTransaction.fromManual(Map<String, dynamic> map) {
+    final rawDate = map['date']?.toString() ?? '';
+    final dateStr = rawDate.contains('T') ? rawDate.split('T').first : rawDate;
+    return PlaidTransaction(
+      transactionId: 'manual_${map['_id']}',
+      name: map['name']?.toString() ?? 'Transaction',
+      amount: (map['amount'] as num?)?.toDouble().abs() ?? 0.0,
+      date: dateStr,
+      category: map['category']?.toString() ?? 'Other',
+      accountName: (map['source'] == 'ocr') ? 'Receipt' : 'Manual',
+      isDebit: (map['isDebit'] as bool?) ?? true,
+      source: map['source']?.toString() ?? 'manual',
+      manualId: map['_id']?.toString(),
     );
   }
 
@@ -75,6 +96,8 @@ class _AllTransactionsScreenState extends State<AllTransactionsScreen> {
   static const _bgGrey = Color(0xFFF5F7FA);
   static const _border = Color(0xFFE2E8F0);
 
+  List<PlaidTransaction> _plaidTxs = [];
+  List<PlaidTransaction> _manualTxs = [];
   late List<PlaidTransaction> _allTx;
   List<PlaidTransaction> _filtered = [];
   final _searchCtrl = TextEditingController();
@@ -86,9 +109,11 @@ class _AllTransactionsScreenState extends State<AllTransactionsScreen> {
   @override
   void initState() {
     super.initState();
-    _allTx = widget.rawTransactions.map((m) => PlaidTransaction.fromMap(m)).toList();
+    _plaidTxs = widget.rawTransactions.map((m) => PlaidTransaction.fromMap(m)).toList();
+    _allTx = List.from(_plaidTxs);
     _applyFilters();
     _fetchCategorizations();
+    _fetchManualTransactions();
   }
 
   Future<void> _fetchCategorizations() async {
@@ -106,6 +131,27 @@ class _AllTransactionsScreenState extends State<AllTransactionsScreen> {
         });
       }
     } catch (_) {}
+  }
+
+  Future<void> _fetchManualTransactions() async {
+    try {
+      final res = await ApiService.get('/api/manual-transactions', context);
+      if (res.statusCode == 200 && mounted) {
+        final List data = jsonDecode(res.body);
+        _manualTxs = data.map<PlaidTransaction>((m) => PlaidTransaction.fromManual(m)).toList();
+        _allTx = [..._plaidTxs, ..._manualTxs];
+        _applyFilters();
+      }
+    } catch (_) {}
+  }
+
+  void _showAddTxSheet() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => _AddTransactionSheet(onAdded: () => _fetchManualTransactions()),
+    );
   }
 
   void _showCategorizeSheet(PlaidTransaction tx) {
@@ -360,6 +406,12 @@ class _AllTransactionsScreenState extends State<AllTransactionsScreen> {
 
     return Scaffold(
       backgroundColor: Colors.white,
+      floatingActionButton: FloatingActionButton(
+        onPressed: _showAddTxSheet,
+        backgroundColor: const Color(0xFF217BFF),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        child: const Icon(Icons.add_rounded, color: Colors.white, size: 26),
+      ),
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
@@ -559,15 +611,32 @@ class _TxTile extends StatelessWidget {
           Text('${tx.isDebit ? '-' : '+'}\$${tx.amount.toStringAsFixed(2)}', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: _accent)),
           const SizedBox(height: 4),
           if (tx.isDebit)
-            categorizedIn != null
-                ? Text('Categorized', style: TextStyle(fontSize: 12, fontFamily: 'Manrope', fontWeight: FontWeight.w500, color: _accent))
-                : GestureDetector(
-                    onTap: onCategorize,
-                    child: const Text(
-                      'Categorize +',
-                      style: TextStyle(fontSize: 12, fontFamily: 'Manrope', fontWeight: FontWeight.w600, color: Color(0xFF667085)),
+            tx.source != 'plaid'
+                ? Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: tx.source == 'ocr' ? const Color(0xFFF0FDF4) : const Color(0xFFFFF7ED),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: tx.source == 'ocr' ? const Color(0xFFBBF7D0) : const Color(0xFFFED7AA)),
                     ),
-                  ),
+                    child: Text(
+                      tx.source == 'ocr' ? 'Receipt' : 'Manual',
+                      style: TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.w600,
+                        color: tx.source == 'ocr' ? const Color(0xFF15803D) : const Color(0xFFEA580C),
+                      ),
+                    ),
+                  )
+                : categorizedIn != null
+                    ? Text('Categorized', style: TextStyle(fontSize: 12, fontFamily: 'Manrope', fontWeight: FontWeight.w500, color: _accent))
+                    : GestureDetector(
+                        onTap: onCategorize,
+                        child: const Text(
+                          'Categorize +',
+                          style: TextStyle(fontSize: 12, fontFamily: 'Manrope', fontWeight: FontWeight.w600, color: Color(0xFF667085)),
+                        ),
+                      ),
           const SizedBox(height: 4),
           Text(shortDate, style: const TextStyle(fontSize: 11, color: Color(0xFF98A2B3))),
         ]),
@@ -926,6 +995,441 @@ class _CategorizationSheetState extends State<CategorizationSheet> {
           ),
         ),
       ],
+    );
+  }
+}
+
+// ─── Add Transaction Sheet ────────────────────────────────────────────────────
+
+class _AddTransactionSheet extends StatefulWidget {
+  final VoidCallback onAdded;
+  const _AddTransactionSheet({required this.onAdded});
+
+  @override
+  State<_AddTransactionSheet> createState() => _AddTransactionSheetState();
+}
+
+class _AddTransactionSheetState extends State<_AddTransactionSheet> {
+  static const _blue      = Color(0xFF1E88E5);
+  static const _green     = Color(0xFF16A34A);
+  static const _textDark  = Color(0xFF1A1F36);
+  static const _textLight = Color(0xFF98A2B3);
+  static const _bgGrey    = Color(0xFFF5F7FA);
+  static const _border    = Color(0xFFE2E8F0);
+
+  static const _categories = [
+    'Food & Drink', 'Shopping', 'Transport', 'Healthcare',
+    'Entertainment', 'Utilities', 'Travel', 'Education', 'Other',
+  ];
+
+  // 0=choice, 1=manual form, 2=ocr source, 3=ocr loading, 4=ocr review
+  int _step = 0;
+  String _txSource = 'manual';
+
+  final _nameCtrl   = TextEditingController();
+  final _amountCtrl = TextEditingController();
+  DateTime _date     = DateTime.now();
+  String _category   = 'Other';
+  bool _isDebit      = true;
+  bool _saving       = false;
+  String? _ocrError;
+
+  @override
+  void dispose() {
+    _nameCtrl.dispose();
+    _amountCtrl.dispose();
+    super.dispose();
+  }
+
+  Future<void> _pickAndScan(ImageSource source) async {
+    setState(() { _step = 3; _ocrError = null; });
+    try {
+      final XFile? file = await ImagePicker().pickImage(
+        source: source, maxWidth: 1024, maxHeight: 1024, imageQuality: 60,
+      );
+      if (!mounted) return;
+      if (file == null) { setState(() => _step = 2); return; }
+
+      final bytes = await file.readAsBytes();
+      final b64 = base64Encode(bytes);
+
+      // ignore: use_build_context_synchronously
+      final res = await ApiService.post(
+        '/api/manual-transactions/scan',
+        {'imageBase64': b64, 'mimeType': 'image/jpeg'},
+        context,
+      );
+      if (!mounted) return;
+
+      if (res.statusCode == 200) {
+        final data = jsonDecode(res.body) as Map<String, dynamic>;
+        _nameCtrl.text   = data['name']?.toString() ?? '';
+        _amountCtrl.text = (data['amount'] as num?)?.toStringAsFixed(2) ?? '';
+        _category = _categories.contains(data['category']) ? data['category'] as String : 'Other';
+        _isDebit  = (data['isDebit'] as bool?) ?? true;
+        if (data['date'] != null) {
+          try { _date = DateTime.parse(data['date'] as String); } catch (_) {}
+        }
+        _txSource = 'ocr';
+      } else {
+        _ocrError = 'Could not read receipt — please review and fill in the details.';
+        _txSource = 'ocr';
+      }
+      setState(() => _step = 4);
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _ocrError = 'Scan failed — please fill in the details manually.';
+        _txSource = 'ocr';
+        _step = 4;
+      });
+    }
+  }
+
+  Future<void> _save() async {
+    final name   = _nameCtrl.text.trim();
+    final amount = double.tryParse(_amountCtrl.text.trim());
+    if (name.isEmpty || amount == null || amount <= 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please enter a valid name and amount.')),
+      );
+      return;
+    }
+    setState(() => _saving = true);
+    try {
+      // ignore: use_build_context_synchronously
+      final res = await ApiService.post('/api/manual-transactions', {
+        'name':     name,
+        'amount':   amount,
+        'date':     _date.toIso8601String().split('T').first,
+        'category': _category,
+        'isDebit':  _isDebit,
+        'source':   _txSource,
+      }, context);
+
+      if (res.statusCode == 201 && mounted) {
+        Navigator.pop(context);
+        widget.onAdded();
+      } else {
+        if (mounted) ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Failed to save. Please try again.')),
+        );
+      }
+    } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
+  }
+
+  Future<void> _pickDate() async {
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: _date,
+      firstDate: DateTime(2020),
+      lastDate: DateTime.now(),
+      builder: (ctx, child) => Theme(
+        data: Theme.of(ctx).copyWith(colorScheme: const ColorScheme.light(primary: _blue)),
+        child: child!,
+      ),
+    );
+    if (picked != null && mounted) setState(() => _date = picked);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: EdgeInsets.fromLTRB(24, 20, 24, MediaQuery.of(context).viewInsets.bottom + 32),
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Center(child: Container(width: 40, height: 4, decoration: BoxDecoration(color: _border, borderRadius: BorderRadius.circular(4)))),
+          const SizedBox(height: 16),
+          _buildStep(),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStep() {
+    switch (_step) {
+      case 0: return _buildChoiceStep();
+      case 1: return _buildFormStep(isOcr: false);
+      case 2: return _buildOcrSourceStep();
+      case 3: return _buildLoadingStep();
+      case 4: return _buildFormStep(isOcr: true);
+      default: return _buildChoiceStep();
+    }
+  }
+
+  Widget _buildChoiceStep() {
+    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      const Text('Add Transaction', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: _textDark)),
+      const SizedBox(height: 4),
+      const Text('Choose how you want to add it', style: TextStyle(fontSize: 13, color: _textLight)),
+      const SizedBox(height: 20),
+      _choiceCard(
+        icon: Icons.edit_note_rounded,
+        color: _blue,
+        title: 'Enter Manually',
+        sub: 'Type in the transaction details',
+        onTap: () => setState(() { _txSource = 'manual'; _step = 1; }),
+      ),
+      const SizedBox(height: 12),
+      _choiceCard(
+        icon: Icons.document_scanner_rounded,
+        color: _green,
+        title: 'Scan Receipt',
+        sub: 'Use your camera or gallery to extract details',
+        onTap: () => setState(() => _step = 2),
+      ),
+    ]);
+  }
+
+  Widget _buildOcrSourceStep() {
+    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      _backRow('Scan Receipt'),
+      const SizedBox(height: 4),
+      const Padding(
+        padding: EdgeInsets.only(left: 46),
+        child: Text('Select your image source', style: TextStyle(fontSize: 13, color: _textLight)),
+      ),
+      const SizedBox(height: 20),
+      _choiceCard(
+        icon: Icons.camera_alt_rounded,
+        color: const Color(0xFF7C3AED),
+        title: 'Take a Photo',
+        sub: 'Open camera to photograph the receipt',
+        onTap: () => _pickAndScan(ImageSource.camera),
+      ),
+      const SizedBox(height: 12),
+      _choiceCard(
+        icon: Icons.photo_library_rounded,
+        color: const Color(0xFF0F766E),
+        title: 'Choose from Gallery',
+        sub: 'Pick an existing receipt photo',
+        onTap: () => _pickAndScan(ImageSource.gallery),
+      ),
+    ]);
+  }
+
+  Widget _buildLoadingStep() {
+    return SizedBox(
+      height: 180,
+      child: Center(child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+        const SizedBox(width: 44, height: 44, child: CircularProgressIndicator(strokeWidth: 3, color: _green)),
+        const SizedBox(height: 20),
+        const Text('Reading your receipt…', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: _textDark)),
+        const SizedBox(height: 6),
+        const Text('This may take a few seconds', style: TextStyle(fontSize: 13, color: _textLight)),
+      ])),
+    );
+  }
+
+  Widget _buildFormStep({required bool isOcr}) {
+    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      Row(children: [
+        GestureDetector(
+          onTap: () => setState(() => _step = isOcr ? 2 : 0),
+          child: Container(
+            width: 34, height: 34,
+            decoration: BoxDecoration(color: _bgGrey, borderRadius: BorderRadius.circular(10)),
+            child: const Icon(Icons.arrow_back_ios_new_rounded, size: 14, color: _textDark),
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text(isOcr ? 'Review & Save' : 'Add Transaction',
+            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: _textDark)),
+          Text(isOcr ? 'Check the details and correct if needed' : 'Fill in the transaction details',
+            style: const TextStyle(fontSize: 12, color: _textLight)),
+        ])),
+      ]),
+
+      if (isOcr && _ocrError != null) ...[
+        const SizedBox(height: 12),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+          decoration: BoxDecoration(
+            color: Colors.orange.shade50,
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(color: Colors.orange.shade200),
+          ),
+          child: Row(children: [
+            Icon(Icons.warning_amber_rounded, size: 18, color: Colors.orange.shade700),
+            const SizedBox(width: 8),
+            Expanded(child: Text(_ocrError!, style: TextStyle(fontSize: 12, color: Colors.orange.shade800))),
+          ]),
+        ),
+      ],
+
+      const SizedBox(height: 16),
+
+      // Expense / Income toggle
+      Row(children: [
+        Expanded(child: GestureDetector(
+          onTap: () => setState(() => _isDebit = true),
+          child: Container(
+            padding: const EdgeInsets.symmetric(vertical: 10),
+            decoration: BoxDecoration(
+              color: _isDebit ? const Color(0xFFFFF5F5) : _bgGrey,
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: _isDebit ? const Color(0xFFFFD2D2) : _border),
+            ),
+            child: Center(child: Text('Expense', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14, color: _isDebit ? const Color(0xFFE53935) : _textLight))),
+          ),
+        )),
+        const SizedBox(width: 10),
+        Expanded(child: GestureDetector(
+          onTap: () => setState(() => _isDebit = false),
+          child: Container(
+            padding: const EdgeInsets.symmetric(vertical: 10),
+            decoration: BoxDecoration(
+              color: !_isDebit ? const Color(0xFFF5FAFF) : _bgGrey,
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: !_isDebit ? const Color(0xFFD7E8FF) : _border),
+            ),
+            child: Center(child: Text('Income', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14, color: !_isDebit ? _blue : _textLight))),
+          ),
+        )),
+      ]),
+
+      const SizedBox(height: 14),
+
+      _fieldLabel('Description'),
+      const SizedBox(height: 6),
+      _textField(_nameCtrl, 'e.g. Grocery store, Netflix…'),
+
+      const SizedBox(height: 12),
+
+      _fieldLabel('Amount'),
+      const SizedBox(height: 6),
+      _textField(_amountCtrl, '0.00', isNumber: true, prefix: '\$'),
+
+      const SizedBox(height: 12),
+
+      Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          _fieldLabel('Date'),
+          const SizedBox(height: 6),
+          GestureDetector(
+            onTap: _pickDate,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
+              decoration: BoxDecoration(color: _bgGrey, borderRadius: BorderRadius.circular(10), border: Border.all(color: _border)),
+              child: Row(children: [
+                const Icon(Icons.calendar_today_rounded, size: 15, color: _textLight),
+                const SizedBox(width: 8),
+                Text(DateFormat('MMM d, yyyy').format(_date),
+                  style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: _textDark)),
+              ]),
+            ),
+          ),
+        ])),
+        const SizedBox(width: 10),
+        Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          _fieldLabel('Category'),
+          const SizedBox(height: 6),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
+            decoration: BoxDecoration(color: _bgGrey, borderRadius: BorderRadius.circular(10), border: Border.all(color: _border)),
+            child: DropdownButton<String>(
+              value: _category,
+              isExpanded: true,
+              underline: const SizedBox(),
+              icon: const Icon(Icons.keyboard_arrow_down_rounded, size: 18, color: _textLight),
+              style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: _textDark),
+              onChanged: (v) { if (v != null) setState(() => _category = v); },
+              items: _categories.map((c) => DropdownMenuItem(value: c, child: Text(c))).toList(),
+            ),
+          ),
+        ])),
+      ]),
+
+      const SizedBox(height: 20),
+
+      SizedBox(
+        width: double.infinity,
+        height: 50,
+        child: ElevatedButton(
+          onPressed: _saving ? null : _save,
+          style: ElevatedButton.styleFrom(
+            backgroundColor: isOcr ? _green : _blue,
+            disabledBackgroundColor: (isOcr ? _green : _blue).withOpacity(0.4),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+            elevation: 0,
+          ),
+          child: _saving
+              ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+              : Text(isOcr ? 'Save Receipt' : 'Save Transaction',
+                  style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: Colors.white)),
+        ),
+      ),
+    ]);
+  }
+
+  Widget _backRow(String title) {
+    return Row(children: [
+      GestureDetector(
+        onTap: () => setState(() => _step = 0),
+        child: Container(
+          width: 34, height: 34,
+          decoration: BoxDecoration(color: _bgGrey, borderRadius: BorderRadius.circular(10)),
+          child: const Icon(Icons.arrow_back_ios_new_rounded, size: 14, color: _textDark),
+        ),
+      ),
+      const SizedBox(width: 12),
+      Text(title, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: _textDark)),
+    ]);
+  }
+
+  Widget _choiceCard({required IconData icon, required Color color, required String title, required String sub, required VoidCallback onTap}) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: color.withOpacity(0.05),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: color.withOpacity(0.25)),
+        ),
+        child: Row(children: [
+          Container(width: 46, height: 46, decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(12)),
+            child: Icon(icon, color: Colors.white, size: 22)),
+          const SizedBox(width: 14),
+          Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text(title, style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: color)),
+            const SizedBox(height: 2),
+            Text(sub, style: const TextStyle(fontSize: 12, color: _textLight)),
+          ])),
+          Icon(Icons.arrow_forward_ios_rounded, size: 13, color: color.withOpacity(0.6)),
+        ]),
+      ),
+    );
+  }
+
+  Widget _fieldLabel(String label) =>
+      Text(label, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: _textDark));
+
+  Widget _textField(TextEditingController ctrl, String hint, {bool isNumber = false, String? prefix}) {
+    return TextField(
+      controller: ctrl,
+      keyboardType: isNumber ? const TextInputType.numberWithOptions(decimal: true) : TextInputType.text,
+      decoration: InputDecoration(
+        hintText: hint,
+        hintStyle: const TextStyle(color: _textLight, fontSize: 14),
+        prefixText: prefix,
+        prefixStyle: const TextStyle(fontSize: 14, color: _textDark, fontWeight: FontWeight.w500),
+        filled: true,
+        fillColor: _bgGrey,
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
+      ),
     );
   }
 }

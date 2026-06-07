@@ -18,6 +18,7 @@ const categorizationRoutes = require('./routes/categorizationRoutes');
 const investmentRoutes = require('./routes/investmentRoutes');
 const aiRoutes = require('./routes/aiRoutes');
 const networthRoutes = require('./routes/networthRoutes');
+const manualTransactionRoutes = require('./routes/manualTransactionRoutes');
 
 
 
@@ -37,7 +38,7 @@ app.use(
   })
 );
 
-app.use(express.json());
+app.use(express.json({ limit: '5mb' }));
 app.use(morgan("dev"));
 
 // ✅ Connect MongoDB
@@ -61,6 +62,7 @@ app.use('/api/categorize', categorizationRoutes);
 app.use('/api/investments', investmentRoutes);
 app.use('/api/ai', aiRoutes);
 app.use('/api/networth', networthRoutes);
+app.use('/api/manual-transactions', manualTransactionRoutes);
 
 
 // ✅ Test route
