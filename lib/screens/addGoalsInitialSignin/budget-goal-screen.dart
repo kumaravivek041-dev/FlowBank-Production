@@ -583,7 +583,7 @@ class _Page1Goal extends StatelessWidget {
             const SizedBox(height: 24),
 
             Text(
-              isSavings ? 'Savings target (PKR)' : 'Budget limit (PKR)',
+              isSavings ? 'Savings target (\$)' : 'Budget limit (\$)',
               style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w600, color: Color(0xFF344054), letterSpacing: 0.1),
             ),
             const SizedBox(height: 8),
@@ -597,7 +597,7 @@ class _Page1Goal extends StatelessWidget {
                 hint: '0',
                 prefix: const Padding(
                   padding: EdgeInsets.only(right: 4),
-                  child: Text('PKR', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Color(0xFF98A2B3))),
+                  child: Text('\$', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Color(0xFF98A2B3))),
                 ),
               ),
             ),
@@ -619,7 +619,7 @@ class _Page1Goal extends StatelessWidget {
                       borderRadius: BorderRadius.circular(20),
                       border: Border.all(color: const Color(0xFFBDD7FF), width: 1),
                     ),
-                    child: Text('PKR $v',
+                    child: Text('\$ $v',
                         style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Color(0xFF1E88E5))),
                   ),
                 );

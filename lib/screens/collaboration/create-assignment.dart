@@ -311,7 +311,7 @@ class _CreateAssignmentPageState extends State<CreateAssignmentPage> {
                   hint: "Enter amount",
                   keyboard: TextInputType.number,
                   icon: currency == "USD" ? Icons.attach_money_rounded : null,
-                  prefixText: currency == "PKR" ? "PKR" : null,
+                  prefixText: null,
                 ),
                 const SizedBox(height: 20),
                 SwitchListTile(

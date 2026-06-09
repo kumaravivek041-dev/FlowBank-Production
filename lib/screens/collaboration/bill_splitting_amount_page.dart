@@ -192,7 +192,7 @@ class _BillSplittingAmountPageState extends State<BillSplittingAmountPage> {
         width: 56, // same visual width as an icon
         child: Center(
           child: Text(
-            "PKR",
+            "\$",
             style: TextStyle(
               color: Color(0xFF217BFF),
               fontWeight: FontWeight.w700,

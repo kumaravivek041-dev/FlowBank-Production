@@ -708,7 +708,7 @@ class _CategorizationSheetState extends State<CategorizationSheet> {
         _items = data.map<Map<String, dynamic>>((g) => {
           'id': g['_id'].toString(),
           'name': g['goalName']?.toString() ?? 'Goal',
-          'sub': 'PKR ${(g['amount'] ?? 0)} target · ${g['goalType'] == 'savings' ? 'Savings' : 'Limit'}',
+          'sub': '\$ ${(g['amount'] ?? 0)} target · ${g['goalType'] == 'savings' ? 'Savings' : 'Limit'}',
         }).toList();
       });
     }

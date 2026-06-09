@@ -57,7 +57,7 @@ class _SpendingForecastScreenState extends State<SpendingForecastScreen> {
   String _pkr(num? v, {int decimals = 0}) {
     if (v == null) return "-";
     final fixed = v.toStringAsFixed(decimals);
-    return "Rs $fixed";
+    return "\$ $fixed";
   }
 
   double _niceStep(double range) {

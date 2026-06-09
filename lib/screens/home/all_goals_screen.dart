@@ -546,8 +546,8 @@ class _GoalTile extends StatelessWidget {
                 const SizedBox(height: 4),
                 Text(
                   isSavings
-                      ? 'PKR ${spent.toStringAsFixed(0)} saved of PKR ${amount.toStringAsFixed(0)}'
-                      : 'PKR ${spent.toStringAsFixed(0)} spent of PKR ${amount.toStringAsFixed(0)}',
+                      ? '\$ ${spent.toStringAsFixed(0)} saved of \$ ${amount.toStringAsFixed(0)}'
+                      : '\$ ${spent.toStringAsFixed(0)} spent of \$ ${amount.toStringAsFixed(0)}',
                   style: const TextStyle(
                     fontSize: 11,
                     fontFamily: 'Manrope',

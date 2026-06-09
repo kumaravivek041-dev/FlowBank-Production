@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:sentry_flutter/sentry_flutter.dart';
 import 'screens/onboarding/OnboardingScreen.dart';
 import 'screens/home/new_homescreen.dart';
 //import 'package:device_preview/device_preview.dart';
@@ -16,19 +17,29 @@ class _MouseScrollBehavior extends MaterialScrollBehavior {
         PointerDeviceKind.trackpad,
       };
 }
-void main() {
-  WidgetsFlutterBinding.ensureInitialized();
-  // Hide bottom nav bar (back/home/recents), keep status bar
-  SystemChrome.setEnabledSystemUIMode(
-    SystemUiMode.manual,
-    overlays: [SystemUiOverlay.top],
-  );
-  runApp(
-      //   DevicePreview(
-      // enabled: true,
-      // builder: (context) => const MyApp(),
-      // )
-      const MyApp()
+Future<void> main() async {
+  await SentryFlutter.init(
+    (options) {
+      options.dsn = 'https://e0a1696c3250f1f6cc2ad07f0197e045@o4511531821760512.ingest.us.sentry.io/4511531824840704';
+      options.tracesSampleRate = 1.0;
+      options.environment = 'production';
+    },
+    appRunner: () async {
+      await Sentry.captureException(Exception('Test: Sentry is working in FlowBank'));
+      WidgetsFlutterBinding.ensureInitialized();
+      // Hide bottom nav bar (back/home/recents), keep status bar
+      SystemChrome.setEnabledSystemUIMode(
+        SystemUiMode.manual,
+        overlays: [SystemUiOverlay.top],
+      );
+      runApp(
+          //   DevicePreview(
+          // enabled: true,
+          // builder: (context) => const MyApp(),
+          // )
+          const MyApp()
+      );
+    },
   );
 }
 

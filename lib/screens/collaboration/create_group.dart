@@ -204,9 +204,9 @@ class _CreateGroupPageState extends State<CreateGroupPage> {
               Row(
                 children: [
                   _CurrencyOption(
-                    label: "PKR",
-                    isSelected: _selectedCurrency == "PKR",
-                    onTap: () => setState(() => _selectedCurrency = "PKR"),
+                    label: "USD",
+                    isSelected: _selectedCurrency == "USD",
+                    onTap: () => setState(() => _selectedCurrency = "USD"),
                   ),
                   const SizedBox(width: 12),
                   _CurrencyOption(

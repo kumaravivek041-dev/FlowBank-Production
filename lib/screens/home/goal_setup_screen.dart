@@ -39,7 +39,7 @@ class _GoalSetupScreenState extends State<GoalSetupScreen> {
 
       if (title.isEmpty) throw Exception("Please enter a goal name.");
       if (amount == null || amount <= 0) {
-        throw Exception("Enter a valid PKR amount.");
+        throw Exception("Enter a valid dollar amount.");
       }
 
       final uri = Uri.parse("http://127.0.0.1:8000/goals");
@@ -50,7 +50,7 @@ class _GoalSetupScreenState extends State<GoalSetupScreen> {
           "user_id": userId,
           "title": title,
           "target_amount": amount,
-          "currency": "PKR",
+          "currency": "USD",
         }),
       );
 
@@ -179,7 +179,7 @@ class _GoalSetupScreenState extends State<GoalSetupScreen> {
               const SizedBox(height: 16),
 
               const Text(
-                "Target Amount (PKR)",
+                "Target Amount (\$)",
                 style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
               ),
               const SizedBox(height: 12),

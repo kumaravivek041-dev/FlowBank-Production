@@ -102,7 +102,7 @@ class _FinancialHealthScreenState extends State<FinancialHealthScreen> {
 
   String _fmtMoney(num? v) {
     final inputs = (_summary?["inputs"] as Map?) ?? {};
-    final currency = inputs["currency"]?.toString() ?? "PKR";
+    final currency = inputs["currency"]?.toString() ?? "USD";
     final symbol =
         inputs["currency_symbol"]?.toString() ??
         (currency == "PKR" ? "₨" : "\$");
@@ -317,7 +317,7 @@ class _FinancialHealthScreenState extends State<FinancialHealthScreen> {
         (s["goal_target_amount"] ?? _summary?["inputs"]?["goal_target_amount"]);
     final goalTargetRaw =
         s["goal_target_amount"] ?? (_summary?["inputs"]?["goal_target_amount"]);
-    final currency = _summary?["inputs"]?["currency"]?.toString() ?? "PKR";
+    final currency = _summary?["inputs"]?["currency"]?.toString() ?? "USD";
 
     final bool hasGoal =
         goalTitle != null && goalTitle.trim().isNotEmpty && goalAmount != null;
